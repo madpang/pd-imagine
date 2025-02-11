@@ -1,0 +1,6 @@
+{
+	"name": "pd-imagine",
+	"build": {
+		"dockerfile": "Dockerfile"
+	}
+}
