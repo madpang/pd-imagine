@@ -2,5 +2,21 @@
 	"name": "pd-imagine",
 	"build": {
 		"dockerfile": "Dockerfile"
+	},
+	"forwardPorts": [8888],
+	"portsAttributes": {
+		"8888": {
+			"label": "Jupyter",
+			"onAutoForward": "notify"
+		}
+	},
+	"customizations": {
+		"vscode": {
+			"settings": {},
+			"extensions": [
+				"ms-python.python",
+				"ms-toolsai.jupyter"
+			]
+		}
 	}
 }

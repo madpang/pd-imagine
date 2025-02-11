@@ -3,7 +3,7 @@
 FROM python:3
 
 # Set up a non-root user for development inside VS Code devcontainer
-ARG USERNAME=vscode
+ARG USERNAME=panda
 ARG USER_UID=1000
 ARG USER_GID=$USER_UID
 
@@ -20,7 +20,7 @@ RUN groupadd --gid $USER_GID $USERNAME \
     && chmod 0440 /etc/sudoers.d/$USERNAME
 
 # Set the working directory in the *container*
-WORKDIR /workspace
+WORKDIR /app
 
 # Install any needed packages specified in "requirements.txt"
 COPY requirements.txt /tmp/pip-tmp/
