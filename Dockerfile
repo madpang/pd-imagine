@@ -33,5 +33,8 @@ SHELL ["/bin/bash", "-c"]
 # Define the environment variable
 ENV NAME="pd-imagine"
 
+# Set the non-root user
+USER $USERNAME
+
 # Set the default command (keep the container alive)
 CMD ["sleep", "infinity"]
