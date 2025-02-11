@@ -2,18 +2,36 @@
 # @see: https://hub.docker.com/_/python
 FROM python:3
 
+# Set up a non-root user for development inside VS Code devcontainer
+ARG USERNAME=vscode
+ARG USER_UID=1000
+ARG USER_GID=$USER_UID
+
+RUN apt-get update && apt-get install -y \
+	sudo \
+	git \
+	curl \
+	&& rm -rf /var/lib/apt/lists/*
+
+# Create the user and grant sudo access
+RUN groupadd --gid $USER_GID $USERNAME \
+    && useradd --uid $USER_UID --gid $USER_GID -m $USERNAME \
+    && echo "$USERNAME ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/$USERNAME \
+    && chmod 0440 /etc/sudoers.d/$USERNAME
+
 # Set the working directory in the *container*
-WORKDIR /stack
+WORKDIR /workspace
 
 # Install any needed packages specified in "requirements.txt"
-COPY requirements.txt ./
-RUN pip install --no-cache-dir -r requirements.txt
+COPY requirements.txt /tmp/pip-tmp/
+RUN pip install --no-cache-dir -r /tmp/pip-tmp/requirements.txt \
+	&& rm -rf /tmp/pip-tmp
 
-# Make port 8888 available to the world ouside the container
-EXPOSE 8888
+# Default shell for VS Code terminal
+SHELL ["/bin/bash", "-c"]
 
 # Define the environment variable
-ENV NAME=PD_IMAGINE
+ENV NAME="pd-imagine"
 
-# Run JupyterLab when the container launches
-CMD ["jupyter", "lab", "--ip='0.0.0.0'", "--port=8888", "--no-browser", "--allow-root", "--NotebookApp.token=''"]
+# Set the default command (keep the container alive)
+CMD ["sleep", "infinity"]

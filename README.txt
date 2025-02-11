@@ -2,7 +2,7 @@
 @file: c0-container/pd-imagin/README.txt
 @date:
 - created on 2025-02-05
-- updated on 2025-02-05
+- updated on 2025-02-11
 @author: madpang
 +++
 
@@ -19,10 +19,14 @@ Execute the following command inside *this* folder to *build* the Docker image:
 docker build -t pd-imagine .
 +++
 
-Execute the following command to *run* the Docker container:
-+++ shell
-docker run -p 8888:8888 -v <path-to-your-stack-folder>:/stack pd-imagine
-# e.g.
-# docker run -p 8888:8888 -v $(pwd):/stack pd-imagine
+Execute the following command to launch the container and sit inside the interactive shell of the container:
++++ cmd from host
+docker run -it -p 8888:8888 -v <path-to-your-stack-folder>:/workspace pd-imagine /bin/bash
 +++
-The above command maps the host stack folder to the container's `/stack` directory.
+
+Then you can start JupyterLab server by executing the following command inside the container:
++++ cmd from container
+jupyter lab --ip=0.0.0.0 --port=8888 --no-browser --allow-root --NotebookApp.token=''
++++
+
+After the server is started, you can access the JupyterLab server by opening a web browser from your client machine and navigating to `http://host-server-address:8888`.
