@@ -1,8 +1,8 @@
 +++ header
-@file: c0-container/pd-imagin/README.txt
+@file: pd-imagine/README.txt
 @date:
 - created on 2025-02-05
-- updated on 2025-02-11
+- updated on 2025-02-12
 @author: madpang
 +++
 
@@ -43,7 +43,7 @@ After the server is started, you can access the JupyterLab server by opening a w
 You can also use this Docker image as a development container in VS Code:
 1. Create a workspace folder, e.g. `~/Workspace/stack/2025-02-11`
 2. And create a `.devcontainer` folder inside the workspace folder.
-3. Copy (or symlink) the `Dockerfile` and `devcontainer.json` files from this folder to the `.devcontainer` folder.
+3. Copy (or symlink) the `.devcontainer` folder from this repository to the workspace folder.
 4. Open the workspace folder in VS Code.
 5. Click the "Reopen in Container" button in the bottom right corner of the window.
 @see: [Developing inside a Container](https://code.visualstudio.com/docs/devcontainers/containers)
@@ -51,3 +51,8 @@ You can also use this Docker image as a development container in VS Code:
 NOTE, when launching the container using the VS Code Dev Containers extension, a bind mount volume is automatically created between the host and the container. The workspace folder in the host is mounted to the `/workspace` folder in the container.
 But one can also specify additional volumes in the `devcontainer.json` file, using `mounts` key.
 @see: [Mounts](https://code.visualstudio.com/remote/advancedcontainers/add-local-file-mount)
+
+NOTE, if your use a symlink to `.devcontainer` folder, you can NOT change its contents from the inside the container, since the symlink will be not work across file systems.
+
+NOTE, currently, if run the using "open folder in dev container" on a remote server through remote-ssh extension, the container will NOT automatically stop when you close the connection.
+You need to manually stop the container by executing `docker stop <container-id>` (in a SSH session).
