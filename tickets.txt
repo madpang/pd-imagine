@@ -1,0 +1,25 @@
++++ header
+@file: pd-imagine/tickets.txt
++++
+
+=== Ticket 1
+
+@brief:
+Rearrange the folder structure of this repository, to make it easier for other users to use it as a submodule in their project.
+
+@status: TODO
+
+@date:
+- created on 2025-02-13
+- updated on 2025-02-23
+
+@details:
+The role of this container is for providing development environment---it is NOT a real *app* image.
+The basic idea is that a dev. container and the real project should be managed separately---the container is NOT intrinsic to the project itself, it is just a convenient tool to provide an isolated environment.
+
+The current way to use this repository is to copy the `.devcontainer` folder to the root of the project folder.
+It would be more streamlined if the user could just add this repository as a submodule, such that this whole repository just becomes that `.devcontainer` folder in the project folder.
+
+The advantage of this approach is that the user can easily update the dev. container by pulling the latest changes from this repository.
+Although one can also use a symlink to the `.devcontainer` folder in the current form to the project folder's `.devcontainer` folder, the content itself will NOT accessible from inside the container, since the symlink will not work across file systems.
+This may be a disappointment since VS Code allow direct "hot" update the configuration of a "devcontainer".

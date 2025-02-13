@@ -56,3 +56,11 @@ NOTE, if your use a symlink to `.devcontainer` folder, you can NOT change its co
 
 NOTE, currently, if run the using "open folder in dev container" on a remote server through remote-ssh extension, the container will NOT automatically stop when you close the connection.
 You need to manually stop the container by executing `docker stop <container-id>` (in a SSH session).
+
+=== Guideline for contribution
+
+1. Fork the repository
+2. Create your feature or bugfix branch from the `develop` branch to address one of the issue in the `tickets.txt` file
+3. Make pull request to the `develop` branch
+
+@note: issue tickets are published through the develop branch, one can file a new through the issue tracker on the GitHub page.
