@@ -41,3 +41,17 @@ git clone --branch main --single-branch https://github.com/madpang/pd-imagine.gi
 # or if the project folder is already a git repository, use the following command
 # git submodule add --branch main https://github.com/madpang/pd-imagine.git .devcontainer
 +++
+
+=== Ticket 2
+
+@brief:
+Allow user to sign the commit with GPG key.
+
+@status: TODO
+
+@date:
+- created on 2025-02-20
+- updated on 2025-02-20
+
+@details:
+Althought the [MS doc](https://code.visualstudio.com/remote/advancedcontainers/sharing-git-credentials) says that the GPG key is automatically shared, but the problem is that there is no way to input the passphrase of the GPG key.
