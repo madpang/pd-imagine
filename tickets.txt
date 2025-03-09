@@ -55,3 +55,17 @@ Allow user to sign the commit with GPG key.
 
 @details:
 Althought the [MS doc](https://code.visualstudio.com/remote/advancedcontainers/sharing-git-credentials) says that the GPG key is automatically shared, but the problem is that there is no way to input the passphrase of the GPG key.
+
+This turns out to be quite a big task.
+
+One workable solution ...
+1. copy public keys
+2. resolve all owership issue
+3. source=/run/user/1000/gnpg/S.gpg-agent,target=/home/panda/.gnupg/S.gpg-agent,type=bind
++++ cmd
+docker run -it \
+	--mount type=bind,src=/run/user/1000/gnupg/S.gpg-agent,dst=/home/panda/.gnupg/S.gpg-agent,readonly \
+	pd-imagine \
+	/bin/bash
++++
+Confirmed that the GPG key is shared by `gpg --list-secret-keys`.

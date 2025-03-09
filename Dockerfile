@@ -6,6 +6,7 @@ FROM python:3
 ARG USERNAME=panda
 ARG USER_UID=1000
 ARG USER_GID=$USER_UID
+ARG GNUPGHOME=/home/$USERNAME/.gnupg
 
 RUN apt-get update && apt-get install -y \
 	sudo \
@@ -18,6 +19,8 @@ RUN groupadd --gid $USER_GID $USERNAME \
     && useradd --uid $USER_UID --gid $USER_GID -m $USERNAME \
     && echo "$USERNAME ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/$USERNAME \
     && chmod 0440 /etc/sudoers.d/$USERNAME
+
+# homedir permission needs to be set to 750 (but maybe it will be properly handled Ubuntu)
 
 # Set the working directory in the *container*
 WORKDIR /app
@@ -35,6 +38,12 @@ ENV NAME="pd-imagine"
 
 # Set the non-root user
 USER $USERNAME
+
+# Copy the public keys of GPG and related configs
+RUN mkdir -p $GNUPGHOME && chmod 700 $GNUPGHOME
+COPY --chown=panda:panda --chmod=600 "SECRET/pubring.kbx" $GNUPGHOME
+COPY --chown=panda:panda --chmod=600 "SECRET/trustdb.gpg" $GNUPGHOME
+COPY --chown=panda:panda --chmod=600 "SECRET/gpg.conf" $GNUPGHOME
 
 # Set the default command (keep the container alive)
 CMD ["sleep", "infinity"]
