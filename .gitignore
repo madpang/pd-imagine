@@ -1,2 +1,5 @@
 # data that should NOT leak to the public (only for on-site testing)
 SECRET/
+
+# workspace specific settings
+.vscode/
