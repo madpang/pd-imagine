@@ -10,7 +10,7 @@
 			"onAutoForward": "notify"
 		}
 	},
-	"mounts": ["source=/run/user/1000/gnupg/S.gpg-agent,target=/home/panda/.gnupg/S.gpg-agent,type=bind"],	
+	"mounts": ["source=/run/user/1000/gnupg/S.gpg-agent,target=/run/user/1000/gnupg/S.gpg-agent,type=bind"],	
 	"customizations": {
 		"vscode": {
 			"settings": {},

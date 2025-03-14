@@ -121,9 +121,10 @@ SECRET
 As for step c, one can use the following command to launch the container w/o the VS Code Dev Containers extension:
 +++ cmd
 docker run -it \
-	--mount type=bind,src=/run/user/1000/gnupg/S.gpg-agent,dst=/home/panda/.gnupg/S.gpg-agent,readonly \
-	pd-imagine \
-	/bin/bash
+  --mount type=bind,src=/run/user/1000/gnupg/S.gpg-agent,dst=/run/user/1000/gnupg/S.gpg-agent,readonly \
+  --mount type=bind,src=$HOME/.gnupg,dst=/home/ubuntu/.gnupg,readonly \
+  pd-imagine \
+  /bin/bash
 +++
 Or, one can specify the `mount` in the `devcontainer.json` file, as follows:
 +++ json
@@ -131,7 +132,7 @@ Or, one can specify the `mount` in the `devcontainer.json` file, as follows:
 	"name": "pd-imagine",
 	// ...
 	"mounts": [
-		"source=/run/user/1000/gnpg/S.gpg-agent,target=/home/panda/.gnupg/S.gpg-agent,type=bind"
+		"source=/run/user/1000/gnupg/S.gpg-agent,target=/home/panda/.gnupg/S.gpg-agent,type=bind"
 	]
 }
 +++
@@ -147,9 +148,63 @@ Before using the GPG key, launch the agent on the local machine.
 
 That is it.
 
+--- A better way
+
+An improvement over the previously described method is to:
+1. Make sure the GPG socket in the container is at `/run/user/$UID/gnupg/` (which is the preferred location for GPG socket, as stated in [3]).
+2. Forward the GPG socket from the the container by to the remote server (using `mount` option of docker).
+3. Mount the $HOME/.gnupg folder from the remote server (which contains the public key and relevant configuration files) to the container.
+In this way, we can avoid manual copying of the public key and configuration files into the container.
+
+But inside a container environment of Ubuntu, the `/run/user/$UID` does NOT exist by default.
+According to GPT, this is because:
++++ quote
+On a typical Ubuntu system, the `/run/user/$UID` directory is dynamically created at login by `systemd` or other session managers.
+This directory is designed to store user-specific runtime data like sockets, and it's deleted when the user logs out.
+
+Inside a Docker container, you often run processes as specific users without the same session management and login infrastructure, so this directory doesn't automatically exist.
++++
+So an `entrypoint.sh` script is added to address this issue---see [6] for the usage of `ENTRYPOINT`---which is inspired by the following excerpt from README of [GnuPG](https://github.com/gpg/gnupg):
++++ quote
+** Socket directory
+
+  GnuPG uses Unix domain sockets to connect its components (on Windows
+  an emulation of these sockets is used).  Depending on the type of
+  the file system, it is sometimes not possible to use the GnuPG home
+  directory (i.e. ~/.gnupg) as the location for the sockets.  To solve
+  this problem GnuPG prefers the use of a per-user directory below the
+  the /run (or /var/run) hierarchy for the sockets.  It is thus
+  suggested to create per-user directories on system or session
+  startup.  For example, the following snippet can be used in
+  /etc/rc.local to create these directories:
+
+      [ ! -d /run/user ] && mkdir /run/user
+      awk -F: </etc/passwd '$3 >= 1000 && $3 < 65000 {print $3}' \
+        | ( while read uid rest; do
+              if [ ! -d "/run/user/$uid" ]; then
+                mkdir /run/user/$uid
+                chown $uid /run/user/$uid
+                chmod 700 /run/user/$uid
+              fi
+            done )
++++
+
+After this setup, I confirmed:
++++ console
+$ gpgconf --list-dirs agent-socket
+/run/user/1000/gnupg/S.gpg-agent
++++
+
+The command to run the docker:
++++ cmd
+docker run -it \
+  --mount type=bind,src=$HOME/.gnupg,dst=/home/ubuntu/.gnupg \
+  --mount type=bind,src=/run/user/1000/gnupg,dst=/run/user/1000/gnupg,readonly \
+  pd-imagine /bin/bash
+
 --- Tips
 
-When making changes to GPG configurations, kill the gpg-agent by `gpgconf --kill gpg-agent` and restart it by `gpgconf --launch gpg-agent`.
+When making changes to GPG configurations, kill the gpg-agent by `gpgconf --kill gpg-agent` and restart it by `gpgconf --launch gpg-agent` from the server.
 
 Use `gpg --list-secret-keys --keyid-format LONG` inside the container to confirm that the GPG key is shared.
 
@@ -162,3 +217,4 @@ One can check whether the gpg-agent is working by running `pgrep gpg-agent` on t
 3. [Arch Linux Wiki: GnuPG](https://wiki.archlinux.org/title/GnuPG)
 4. [Gentoo Linux Wiki: GnuPG](https://wiki.gentoo.org/wiki/GnuPG)
 5. [GnuPG official website](https://www.gnupg.org/)
+6. [Docker docs](https://docs.docker.com/reference/dockerfile/#entrypoint)

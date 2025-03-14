@@ -1,49 +1,58 @@
-# Use an official Python runtime as a base image
-# @see: https://hub.docker.com/_/python
-FROM python:3
+# === Use an official Ubuntu image as the base layer
+# @see: https://hub.docker.com/_/ubuntu
+FROM ubuntu:24.04
 
-# Set up a non-root user for development inside VS Code devcontainer
-ARG USERNAME=panda
-ARG USER_UID=1000
-ARG USER_GID=$USER_UID
-ARG GNUPGHOME=/home/$USERNAME/.gnupg
+# Define a environment variable as an identifier
+ENV MY_ENV="pd-imagine"
 
+# === Install basic tools
 RUN apt-get update && apt-get install -y \
 	sudo \
-	git \
+	openssh-client \
+	gnupg \
 	curl \
+	git \
+	&& apt-get clean \
 	&& rm -rf /var/lib/apt/lists/*
 
-# Create the user and grant sudo access
-RUN groupadd --gid $USER_GID $USERNAME \
-    && useradd --uid $USER_UID --gid $USER_GID -m $USERNAME \
-    && echo "$USERNAME ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/$USERNAME \
-    && chmod 0440 /etc/sudoers.d/$USERNAME
+COPY entrypoint.sh /tmp/startup/
+RUN chmod +x /tmp/startup/entrypoint.sh
 
-# homedir permission needs to be set to 750 (but maybe it will be properly handled Ubuntu)
+# === Setup a non-root user and grant sudo access for development inside VS Code devcontainer
+# @note:
+# - Ubuntu image may have automatically created a default non-root user---named `ubuntu`, with user id 1000, group id 1000
+# - If you use Debian based image, you need to create that non-root user manually
+#   +++ cmd
+#   groupadd --gid $USER_GID $USERNAME
+#   useradd --uid $USER_UID --gid $USER_GID
+#   +++
+ARG USERNAME=ubuntu
+ARG USER_UID=1000
+ARG USER_GID=$USER_UID
 
-# Set the working directory in the *container*
-WORKDIR /app
-
-# Install any needed packages specified in "requirements.txt"
-COPY requirements.txt /tmp/pip-tmp/
-RUN pip install --no-cache-dir -r /tmp/pip-tmp/requirements.txt \
-	&& rm -rf /tmp/pip-tmp
-
-# Default shell for VS Code terminal
-SHELL ["/bin/bash", "-c"]
-
-# Define the environment variable
-ENV NAME="pd-imagine"
+RUN echo "$USERNAME ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/$USERNAME \
+	&& chmod 0640 /etc/sudoers.d/$USERNAME
 
 # Set the non-root user
 USER $USERNAME
 
-# Copy the public keys of GPG and related configs
-RUN mkdir -p $GNUPGHOME && chmod 700 $GNUPGHOME
-COPY --chown=panda:panda --chmod=600 "SECRET/pubring.kbx" $GNUPGHOME
-COPY --chown=panda:panda --chmod=600 "SECRET/trustdb.gpg" $GNUPGHOME
-COPY --chown=panda:panda --chmod=600 "SECRET/gpg.conf" $GNUPGHOME
+RUN sudo mkdir -m 0755 /run/user \
+	&& sudo mkdir -m 0700 /run/user/$USER_UID \
+	&& sudo chown $USER_UID:$USER_GID /run/user/$USER_UID
 
-# Set the default command (keep the container alive)
+# Set the working directory in the *container*
+WORKDIR /home/$USERNAME/workspace
+
+# Install any needed packages specified in "requirements.txt"
+# COPY requirements.txt /tmp/pip-tmp/
+# RUN pip install --no-cache-dir -r /tmp/pip-tmp/requirements.txt \
+# 	&& rm -rf /tmp/pip-tmp
+
+# Default shell for 
+# SHELL ["/bin/bash", "-c"]
+
+# === Setup the launch behavior
+# Set the startup script
+# ENTRYPOINT ["/tmp/startup/entrypoint.sh"]
+# Set the default command (to keep the container alive)
 CMD ["sleep", "infinity"]
