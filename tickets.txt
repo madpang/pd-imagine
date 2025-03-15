@@ -51,7 +51,7 @@ Allow user to sign the commit with GPG key.
 
 @date:
 - created on 2025-02-20
-- updated on 2025-03-15
+- updated on 2025-03-16
 
 @details:
 My goal is to sign the git commit with the GPG key, inside a docker container, which is running on a remote server.
@@ -150,22 +150,24 @@ This solution is implemented in the Dockerfile of this repository.
 If you start the container in a plain way---w/o using the VS Code Dev Containers extension---you can use the following command (from the remote server):
 +++ cmd
 docker run -it \
-  --mount type=bind,src=$HOME/.gnupg,dst=/home/ubuntu/.gnupg \
-  --mount type=bind,src=/run/user/1000/gnupg,dst=/run/user/1000/gnupg \
+  --mount type=bind,src=$HOME/.gnupg,dst=/home/ubuntu/.gnupg,readonly \
+  --mount type=bind,src=/run/user/1000/gnupg,dst=/run/user/1000/gnupg,readonly \
   pd-imagine /bin/bash
 +++
 NOTE, it is said that mounting the containing gnupg directory is more appropriate than mounting the socket file directly---in this way the expected directory structure (and permissions) is preserved, and your agent socket will “look” as it normally does.
-If you use the VS Code Dev Containers extension, you can specify the `mounts` in the `devcontainer.json` file, as follows:
+If you use the VS Code Dev Containers extension, you can specify the `runArgs` in the `devcontainer.json` file, as follows:
 +++ json
 {
 	"name": "pd-imagine",
 	// ...
-	"mounts": [
-    {"source": "${localEnv:HOME}/.gnupg", "target": "/home/ubuntu/.gnupg", "type": "bind"},
-    {"source": "/run/user/1000/gnupg", "target": "/run/user/1000/gnupg", "type": "bind"}
-	]
+	"runArgs": [
+		"--mount", "type=bind,src=${localEnv:HOME}/.gnupg,dst=/home/ubuntu/.gnupg,readonly",
+		"--mount", "type=bind,src=/run/user/1000/gnupg,dst=/run/user/1000/gnupg,readonly"
+	],
+  // ...
 }
 +++
+For the syntax of the devcontainer.json syntax, see [7].
 
 Finally, on the local machine, I have the following configuration in the `~/.gnupg/gpg-agent.conf` file:
 +++ config
@@ -217,6 +219,12 @@ is why you see this diagnostic.
 +++
 In a word, for the current being, you can safely ignore this message.
 
+For GPG credential sharing, the VS Code Dev Containers extension tries to handle this for you but turns out it just get in the way.
+It is not detailed in [1], but it seems that the extension has some business with the `~/.gnupg` folder, if you use non-root login user in the container.
+To prevent it from messing up that folder, specify a `readonly` flag in the mount command is necessary.
+NOTE, this will have side effect that you will NOT be able to add new keys, etc.
+But in my opinion, this is a good manner in using GPG agent forwarding---you should use what is provided by the host, and should not pollute host's environment from the container.
+
 --- References
 
 1. [Sharing Git credentials with your container](https://code.visualstudio.com/remote/advancedcontainers/sharing-git-credentials)
@@ -225,3 +233,4 @@ In a word, for the current being, you can safely ignore this message.
 4. [Gentoo Linux Wiki: GnuPG](https://wiki.gentoo.org/wiki/GnuPG)
 5. [GnuPG official website](https://www.gnupg.org/)
 6. [Docker docs](https://docs.docker.com/reference/dockerfile/#entrypoint)
+7. [Dev Container Specification](https://containers.dev/implementors/json_reference/)

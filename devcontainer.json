@@ -10,9 +10,9 @@
 			"onAutoForward": "notify"
 		}
 	},
-	"mounts": [
-		{"source": "${localEnv:HOME}/.gnupg", "target": "/home/ubuntu/.gnupg", "type": "bind"},
-		{"source": "/run/user/1000/gnupg", "target": "/run/user/1000/gnupg", "type": "bind"}
+	"runArgs": [
+		"--mount", "type=bind,src=${localEnv:HOME}/.gnupg,dst=/home/ubuntu/.gnupg,readonly",
+		"--mount", "type=bind,src=/run/user/1000/gnupg,dst=/run/user/1000/gnupg,readonly"
 	],
 	"customizations": {
 		"vscode": {
