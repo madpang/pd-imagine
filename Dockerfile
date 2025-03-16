@@ -5,13 +5,22 @@ FROM ubuntu:24.04
 # Define a environment variable as an identifier
 ENV MY_ENV="pd-imagine"
 
-# === Install basic tools
+# Copy the requirements file for Python packages
+COPY requirements.txt /tmp/pip-tmp/
+# Copy the entrypoint script
+COPY entrypoint.sh /tmp/startup/
+RUN chmod +x /tmp/startup/entrypoint.sh
+# @note: Copied files are owned by root
+
+# Set the default shell in building the image
+# @note: The default shell command for Linux is `["/bin/sh", "-c"]`, which lacks some modern features, such as `source`, etc.
+SHELL ["/bin/bash", "-c"]
+
+# === Install necessary tools
 RUN apt-get update && apt-get install -y \
 	sudo \
-	openssh-client \
-	gnupg \
-	curl \
-	git \
+	openssh-client gnupg curl git \
+	python3 python3-pip python3-venv \
 	&& apt-get clean \
 	&& rm -rf /var/lib/apt/lists/*
 
@@ -38,17 +47,18 @@ RUN sudo mkdir -m 0755 /run/user \
 	&& sudo mkdir -m 0700 /run/user/$USER_UID \
 	&& sudo chown $USER_UID:$USER_GID /run/user/$USER_UID
 
-# Set the working directory in the *container*
-WORKDIR /home/$USERNAME/workspace
-
-# Install any needed packages specified in "requirements.txt"
-# COPY requirements.txt /tmp/pip-tmp/
-# RUN pip install --no-cache-dir -r /tmp/pip-tmp/requirements.txt \
-# 	&& rm -rf /tmp/pip-tmp
-
-# Default shell
-# @note: The default shell command for Ubuntu image is `["/bin/bash", "-c"]`, if you do not want to override it, you do do not need to specify the `SHELL` instruction.
+# === Install Python packages
+# @note: Creating a virtual environment is necessary on a Ubuntu based image, to circumvent the PEP 668 (Externally Managed Environments) issue.
+RUN python3 -m venv /home/$USERNAME/.venv \
+	&& source /home/$USERNAME/.venv/bin/activate \
+	&& pip install --upgrade pip \
+	&& pip install --no-cache-dir -r /tmp/pip-tmp/requirements.txt
 
 # === Setup the launch behavior
+# Set the entrypoint script
+ENTRYPOINT ["/tmp/startup/entrypoint.sh"]
 # Set the default command (to keep the container alive)
 CMD ["sleep", "infinity"]
+
+# Set the working directory in the *container*
+WORKDIR /home/$USERNAME/workspace
