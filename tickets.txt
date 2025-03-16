@@ -47,7 +47,7 @@ git clone --branch main --single-branch https://github.com/madpang/pd-imagine.gi
 @brief:
 Allow user to sign the commit with GPG key.
 
-@status: PROGRESSING
+@status: DONE
 
 @date:
 - created on 2025-02-20
@@ -108,7 +108,7 @@ After many trials and errors, I got a relative good solution:
 a. mount the gpg-agent socket from the remote server to the container.
 b. mount the GPG home directory from the remote server to the container.
 
-NOTE, inside a container environment of Ubuntu, the `/run/user/$UID` does NOT exist by default.
+NOTE, inside a container environment of Ubuntu (as well as Debian), the `/run/user/$UID` does NOT exist by default.
 According to GPT, this is because:
 +++ quote
 On a typical Ubuntu system, the `/run/user/$UID` directory is dynamically created at login by `systemd` or other session managers.
@@ -150,7 +150,7 @@ This solution is implemented in the Dockerfile of this repository.
 If you start the container in a plain way---w/o using the VS Code Dev Containers extension---you can use the following command (from the remote server):
 +++ cmd
 docker run -it \
-  --mount type=bind,src=$HOME/.gnupg,dst=/home/ubuntu/.gnupg,readonly \
+  --mount type=bind,src=$HOME/.gnupg,dst=/home/panda/.gnupg,readonly \
   --mount type=bind,src=/run/user/1000/gnupg,dst=/run/user/1000/gnupg,readonly \
   pd-imagine /bin/bash
 +++
@@ -161,7 +161,7 @@ If you use the VS Code Dev Containers extension, you can specify the `runArgs` i
 	"name": "pd-imagine",
 	// ...
 	"runArgs": [
-		"--mount", "type=bind,src=${localEnv:HOME}/.gnupg,dst=/home/ubuntu/.gnupg,readonly",
+		"--mount", "type=bind,src=${localEnv:HOME}/.gnupg,dst=/home/panda/.gnupg,readonly",
 		"--mount", "type=bind,src=/run/user/1000/gnupg,dst=/run/user/1000/gnupg,readonly"
 	],
   // ...

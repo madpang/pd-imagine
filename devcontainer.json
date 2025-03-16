@@ -11,7 +11,7 @@
 		}
 	},
 	"runArgs": [
-		"--mount", "type=bind,src=${localEnv:HOME}/.gnupg,dst=/home/ubuntu/.gnupg,readonly",
+		"--mount", "type=bind,src=${localEnv:HOME}/.gnupg,dst=/home/panda/.gnupg,readonly",
 		"--mount", "type=bind,src=/run/user/1000/gnupg,dst=/run/user/1000/gnupg,readonly"
 	],
 	"customizations": {
