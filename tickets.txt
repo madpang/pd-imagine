@@ -47,11 +47,190 @@ git clone --branch main --single-branch https://github.com/madpang/pd-imagine.gi
 @brief:
 Allow user to sign the commit with GPG key.
 
-@status: TODO
+@status: DONE
 
 @date:
 - created on 2025-02-20
-- updated on 2025-02-20
+- updated on 2025-03-16
 
 @details:
-Althought the [MS doc](https://code.visualstudio.com/remote/advancedcontainers/sharing-git-credentials) says that the GPG key is automatically shared, but the problem is that there is no way to input the passphrase of the GPG key.
+My goal is to sign the git commit with the GPG key, inside a docker container, which is running on a remote server.
+
+Although the [1] says that the GPG key is automatically shared by using the "Dev Container extension", but it does not detail on it.
+And I think that is case when running the dev container on local host---not on remote server---and there is a decent GUI based pinentry program is properly set to handle the passphrase input.
+For example, when you work on a Ubuntu 24.04 desktop, you launch a devcontainer---in which case the VS Code extension handles to gpg-agent forwarding and copies the GPG public key to the container for you---and you try to sign a git commit, the default pinentry program (e.g. `pinentry-gnome3`) will pop up on the host machine to ask for the  passphrase of the GPG key.
+
+But my workflow is to run the devcontainer on a remote server, and I used to use the CLI based `pinentry-curse` (together w/ the setting of `export GPG_TTY=$(tty)`) to handle the passphrase input.
+I use to directly deploy the GPG key (including the secret key) to the remote server---usually runs on a headless mode---and I can sign the git commit on the remote server without any problem, through the "VS Code Remote - SSH" extension.
+
+Although [2] says that one can use the *Remote - SSH* and *Dev Containers* extensions together, but the out-of-the-box experience is not that smooth---you will NOT be able to supply the passphrase for the GPG key so that ALL your commit will fail, unless you disable the GPG signing, which, well ... is so compromising.
+
+When I started to tackle this issue, I tried searching the internet and asking ChatGPT, DeepSeek to get a quick solution, but only ended up with many times of frustration.
+However, during the process, some keywords began to emerge, such as "pinentry", "gpg-agent".
+I decided to take a step back and try to sort out the things---first, I need to SSH into the remote server, and then I need to a means to supply the passphrase to the container running on the remote server---so there are two steps to solve this issue.
+
+The first part---SSH---seems to be familiar to me, so I decided to systematically figure out how the GPG works.
+Arch Linux's wiki page on GunPG [3] really provided a good guide for me. 
+Especially the part about *gpg-agent*:
+> The intended use for the `gpg-agent-extra.socket` on a local system is to set up a Unix domain socket forwarding from a remote system. This enables to use gpg on the remote system without exposing the private keys to the remote system
+is such a hint!
+
+I began to understand that the **gpg-agent forwarding** is the key to solve this issue.
+Beyond that, inspired by the idea of "NOT exposing the private keys to the remote system", I realized that I might also use **ssh-agent forwarding** together, to simplify the authentication process in the first place---so that all the "secret" stuffs are kept on the local machine, and the the remote server as well as the container running on it should only consult the local machine for the authentication.
+
+With this idea in mind, the picture became clear to me:
+1. Delete the private SSH key (to access GitHub) and the private GPG key (to sign the git commit) from the remote server.
+2. Setup the SSH agent forwarding, so that the remote server can still push and pull the git repository from GitHub by consulting the agent on the local machine. Further forward the SSH agent to the container running on the remote server is handled automatically by the "Remote - SSH" extension---one can confirm by running `ssh-add -L` inside the container, which should list the private SSH key on the local machine.
+3. Setup the GPG agent forwarding, so that the container running on the remote server can sign the git commit by consulting the agent on the remote machine, which in term consults the agent on the local machine.
+4. Setup a proper pinentry program on the local machine, so that I have a *unified* way to input the passphrase. This naturally leads to a GUI based program---I use `pinentry-mac` since my local machine is a Mac---the CLI based pinentry would easily get lost in this complex situation.
+
+Step 2 is straightforward---OpenSSH provides a simple setup, the following is an excerpt from the `~/.ssh/config` file on the local machine:
++++ config
+Host remote-server
+	HostName <remote-server-ip>
+	User <username>
+	ForwardAgent yes
+	IdentityFile <path-to-your-login-key>
++++
+On the local host, use `ssh-add <path-to-your-private-key>` to add the private SSH key that you want to share to the agent, and in the SSH session on the remote server, you should be able access that private SSH key by running `ssh-add -L`.
+
+Step 3 needs more work.
+For the first part---setup the gpg-agent forwarding via SSH---I consulted [4, 5], and the following line is added to that `~/.ssh/config` file on the local machine:
++++
+Host remote-server
+	# ...
+	RemoteForward /run/user/1000/gnupg/S.gpg-agent /Users/madpang/.gnupg/S.gpg-agent.extra
++++
+NOTE that, the `/run/user/1000/gnupg/S.gpg-agent` is the default socket file of the gpg-agent on the remote server---in my case, a Ubuntu server (22.04 LTS), and the `/Users/madpang/.gnupg/S.gpg-agent` is the default socket file of the gpg-agent on the local machine---a Mac (macOS 13.7).
+The references specifically stated that `S.gpg-agent.extra` on the local machine should be forwarded to `S.gpg-agent` on the remote server.
+The second part---setup the gpg-agent forwarding to the container running on the remote server---is a bit more tricky.
+After many trials and errors, I got a relative good solution:
+a. mount the gpg-agent socket from the remote server to the container.
+b. mount the GPG home directory from the remote server to the container.
+
+NOTE, inside a container environment of Ubuntu (as well as Debian), the `/run/user/$UID` does NOT exist by default.
+According to GPT, this is because:
++++ quote
+On a typical Ubuntu system, the `/run/user/$UID` directory is dynamically created at login by `systemd` or other session managers.
+This directory is designed to store user-specific runtime data like sockets, and it's deleted when the user logs out.
+
+Inside a Docker container, you often run processes as specific users without the same session management and login infrastructure, so this directory doesn't automatically exist.
++++
+So an `entrypoint.sh` script is added to address this issue---see [6] for the usage of `ENTRYPOINT`---which is inspired by the following excerpt from README of [GnuPG](https://github.com/gpg/gnupg):
++++ quote
+** Socket directory
+
+  GnuPG uses Unix domain sockets to connect its components (on Windows
+  an emulation of these sockets is used).  Depending on the type of
+  the file system, it is sometimes not possible to use the GnuPG home
+  directory (i.e. ~/.gnupg) as the location for the sockets.  To solve
+  this problem GnuPG prefers the use of a per-user directory below the
+  the /run (or /var/run) hierarchy for the sockets.  It is thus
+  suggested to create per-user directories on system or session
+  startup.  For example, the following snippet can be used in
+  /etc/rc.local to create these directories:
+
+      [ ! -d /run/user ] && mkdir /run/user
+      awk -F: </etc/passwd '$3 >= 1000 && $3 < 65000 {print $3}' \
+        | ( while read uid rest; do
+              if [ ! -d "/run/user/$uid" ]; then
+                mkdir /run/user/$uid
+                chown $uid /run/user/$uid
+                chmod 700 /run/user/$uid
+              fi
+            done )
++++
+After this setup, I confirmed inside the container::
++++ console
+$ gpgconf --list-dirs agent-socket
+/run/user/1000/gnupg/S.gpg-agent
++++
+
+This solution is implemented in the Dockerfile of this repository.
+If you start the container in a plain way---w/o using the VS Code Dev Containers extension---you can use the following command (from the remote server):
++++ cmd
+docker run -it \
+  --mount type=bind,src=$HOME/.gnupg,dst=/home/panda/.gnupg,readonly \
+  --mount type=bind,src=/run/user/1000/gnupg,dst=/run/user/1000/gnupg,readonly \
+  pd-imagine /bin/bash
++++
+NOTE, it is said that mounting the containing gnupg directory is more appropriate than mounting the socket file directly---in this way the expected directory structure (and permissions) is preserved, and your agent socket will “look” as it normally does.
+If you use the VS Code Dev Containers extension, you can specify the `runArgs` in the `devcontainer.json` file, as follows:
++++ json
+{
+	"name": "pd-imagine",
+	// ...
+	"runArgs": [
+		"--mount", "type=bind,src=${localEnv:HOME}/.gnupg,dst=/home/panda/.gnupg,readonly",
+		"--mount", "type=bind,src=/run/user/1000/gnupg,dst=/run/user/1000/gnupg,readonly"
+	],
+  // ...
+}
++++
+For the syntax of the devcontainer.json syntax, see [7].
+
+Finally, on the local machine, I have the following configuration in the `~/.gnupg/gpg-agent.conf` file:
++++ config
+pinentry-program /opt/homebrew/bin/pinentry-mac
++++
+
+Remember to launch the gpg-agent on the local machine, by running `gpgconf --launch gpg-agent`.
+
+There you go.
+
+--- Tips
+
+## About SSH agent forwarding
+
+If your local machine is a Mac, the ssh agent will "forget" the private key after a reboot.
+If you find `ssh-add -L` in the container does not list the private key, you may need to re-add the private key by running `ssh-add <path-to-your-private-key>` on the local machine.
+
+## About GPG agent forwarding
+
+The remote server does NOT have the secret key, and the folder structure of `$GNUPGHOME` is as follows:
++++ tree
+~/.gnupg/
+|- gpg.conf 	    # <- GPG configuration file w/ one line content: `use-agent`
+|- purring.kbx    # <- GPG public key ring
+|- trustdb.gpg    # <- GPG trust database
++++
+
+When making changes to GPG configurations, kill the gpg-agent by `gpgconf --kill gpg-agent` and restart it by `gpgconf --launch gpg-agent` from local machine (from where the agent is forwarded).
+One can check whether the gpg-agent is working by running `pgrep gpg-agent` on the local machine.
+
+Use `gpg --list-secret-keys --keyid-format LONG` inside the container to confirm that the GPG key is shared.
+
+To get a uniform entry point for the passphrase input, you'd better to use a GUI based pinentry program (as I stated, a pinentry in the tty mode can get lost or behave unexpectedly in this tunneling situation).
+If you work on a Mac, I recommend `pinentry-mac`---you can install it via Homebrew by `brew install pinentry-mac`.
+
+After everything is setup, when you run `gpg --list-secret-keys` inside the container, you might see the following message:
+> gpg: problem with fast path key listing: Forbidden - ignored
+According to [GnuPG mailing list](https://lists.gnupg.org/pipermail/gnupg-users/2024-April/067043.html) on 2024-04-05:
++++ quote
+I'll suppress that message in --quiet mode for the next release.
+...
+gpg first tries to a get a listing of all secret keys (the keygrips) and later can do a fast
+memcmp instead of an IPC call.
+
+If you use the extra-socket certain operations are forbidden so that a
+rogue gpg version on the remote site won't be able to change passwords,
+export secret keys, or get a listing of all available secret keys.  This
+is why you see this diagnostic.
++++
+In a word, for the current being, you can safely ignore this message.
+
+For GPG credential sharing, the VS Code Dev Containers extension tries to handle this for you but turns out it just get in the way.
+It is not detailed in [1], but it seems that the extension has some business with the `~/.gnupg` folder, if you use non-root login user in the container.
+To prevent it from messing up that folder, specify a `readonly` flag in the mount command is necessary.
+NOTE, this will have side effect that you will NOT be able to add new keys, etc.
+But in my opinion, this is a good manner in using GPG agent forwarding---you should use what is provided by the host, and should not pollute host's environment from the container.
+
+--- References
+
+1. [Sharing Git credentials with your container](https://code.visualstudio.com/remote/advancedcontainers/sharing-git-credentials)
+2. [Developing inside a Container](https://code.visualstudio.com/docs/devcontainers/containers)
+3. [Arch Linux Wiki: GnuPG](https://wiki.archlinux.org/title/GnuPG)
+4. [Gentoo Linux Wiki: GnuPG](https://wiki.gentoo.org/wiki/GnuPG)
+5. [GnuPG official website](https://www.gnupg.org/)
+6. [Docker docs](https://docs.docker.com/reference/dockerfile/#entrypoint)
+7. [Dev Container Specification](https://containers.dev/implementors/json_reference/)
