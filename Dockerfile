@@ -14,6 +14,7 @@ COPY requirements.txt /tmp/pip-tmp/requirements.txt
 RUN apt-get update && apt-get install -y \
 	sudo \
 	openssh-client gnupg curl git \
+	px nano \
 	&& apt-get clean \
 	&& rm -rf /var/lib/apt/lists/*
 
