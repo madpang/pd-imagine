@@ -234,3 +234,35 @@ But in my opinion, this is a good manner in using GPG agent forwarding---you sho
 5. [GnuPG official website](https://www.gnupg.org/)
 6. [Docker docs](https://docs.docker.com/reference/dockerfile/#entrypoint)
 7. [Dev Container Specification](https://containers.dev/implementors/json_reference/)
+
+=== Ticket 3
+
+@brief:
+Add necessary tools for better development experience.
+
+@status: TODO
+
+@date:
+- created on 2025-03-18
+- updated on 2025-03-18
+
+@details:
+Currently, there is a lack of basic tools for process checking, e.g `pgrep`.
+Also, there is no suitable text editor for quick editing, e.g. `nano`, which makes git based workflow difficult.
+Adding these basic tools is a minimal requirement for this ticket.
+Beyond that, one can also propose adding new Python packages to fully utilize the interactive Python Window feature of the VS Code.
+
+=== Ticket 4
+
+@brief:
+Change the default working directory to `/home/panda/workspace/<project-folder>` when used a dev container.
+
+@status: TODO
+
+@date:
+- created on 2025-03-18
+- updated on 2025-03-18
+
+@details:
+Currently, the default working directory is `/workspaces/<project-folder>`, where `<project-folder>` is the name of mounted "current" folder when using "Reopen in Container" feature of VS Code.
+Since this image is designed such that user will login as non-root user `panda`, the proposed working directory is more appropriate.
