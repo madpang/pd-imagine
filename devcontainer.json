@@ -14,7 +14,9 @@
 			"settings": {},
 			"extensions": [
 				"ms-python.python",
-				"ms-toolsai.jupyter"
+				"eamodio.gitlens",
+				"ms-toolsai.jupyter-renderers",
+				"ms-toolsai.datawrangler"
 			]
 		}
 	}
