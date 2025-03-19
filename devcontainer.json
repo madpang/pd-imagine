@@ -3,6 +3,8 @@
 	"build": {
 		"dockerfile": "Dockerfile"
 	},
+	"workspaceMount": "type=bind,src=${localWorkspaceFolder},target=/home/panda/workspace/${localWorkspaceFolderBasename}",
+	"workspaceFolder": "/home/panda/workspace/${localWorkspaceFolderBasename}",
 	"forwardPorts": [8888],
 	"portsAttributes": {
 		"8888": {

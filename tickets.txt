@@ -257,12 +257,25 @@ Beyond that, one can also propose adding new Python packages to fully utilize th
 @brief:
 Change the default working directory to `/home/panda/workspace/<project-folder>` when used a dev container.
 
-@status: TODO
+@status: DONE
 
 @date:
 - created on 2025-03-18
-- updated on 2025-03-18
+- updated on 2025-03-19
 
 @details:
 Currently, the default working directory is `/workspaces/<project-folder>`, where `<project-folder>` is the name of mounted "current" folder when using "Reopen in Container" feature of VS Code.
 Since this image is designed such that user will login as non-root user `panda`, the proposed working directory is more appropriate.
+
+To change the default working directory mount behavior, one can add the following line to the `devcontainer.json` file:
++++ devcontainer.json
+// ...
+"workspaceMount": "type=bind,src=${localWorkspaceFolder},target=/home/panda/workspace/${localWorkspaceFolderBasename}",
+"workspaceFolder": "/home/panda/workspace/${localWorkspaceFolderBasename}",
+// ...
++++
+The auto-variables are documented in [1].
+The property `workspaceMount` actually specifies a docker `--mount` option, and `workspaceFolder` is equivalent to the `WORKDIR` instruction in a Dockerfile.
+
+--- References
+1. [Dev Container metadata reference](https://containers.dev/implementors/json_reference/)
