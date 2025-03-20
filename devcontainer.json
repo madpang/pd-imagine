@@ -15,7 +15,7 @@
 			"extensions": [
 				"ms-python.python",
 				"eamodio.gitlens",
-				"ms-toolsai.jupyter-renderers",
+				"ms-toolsai.jupyter",
 				"ms-toolsai.datawrangler"
 			]
 		}
