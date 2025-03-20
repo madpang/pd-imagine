@@ -240,17 +240,27 @@ But in my opinion, this is a good manner in using GPG agent forwarding---you sho
 @brief:
 Add necessary tools for better development experience.
 
-@status: TODO
+@status: DONE
 
 @date:
 - created on 2025-03-18
-- updated on 2025-03-18
+- updated on 2025-03-20
 
 @details:
 Currently, there is a lack of basic tools for process checking, e.g `pgrep`.
 Also, there is no suitable text editor for quick editing, e.g. `nano`, which makes git based workflow difficult.
-Adding these basic tools is a minimal requirement for this ticket.
-Beyond that, one can also propose adding new Python packages to fully utilize the interactive Python Window feature of the VS Code.
+
+I modified the `Dockerfile` to add the following packages:
+- `nano`
+- `px`
+And I also modify the `requirements.txt` file to add the following Python packages:
+- `pandas`
+Besides, I modified the `devcontainer.json` file to tailor the extensions:
+- change [Jupyter Extension Pack] to [Jupyter Notebook Renderers] only
+- add [GitLens]
+- add [Data Wrangler]
+
+With these changes, the user can have a better development experience when using this container.
 
 === Ticket 4
 
