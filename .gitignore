@@ -1,2 +1,5 @@
-# workspace specific settings
+# --- private files
+.private.*
+
+# --- auxiliary files
 .vscode/
