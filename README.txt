@@ -47,8 +47,8 @@ docker build -t pd-imagine .
 
 Execute the following command to launch the container and login to the interactive shell of the container:
 ``` cmd @host
-docker run -it -p 8888:8888 -v <path-to-your-stack-folder>:/home/panda/workspace/<your-project-name> pd-imagine /bin/bash
-# e.g., docker run -it -p 8888:8888 -v ~/workspace/pd-imagine:/home/panda/workspace/pd-imagine pd-imagine:latest /bin/bash
+docker run -it -p 8888:8888 -v <path-to-your-stack-folder>:/home/ubuntu/wksp/<your-project-name> pd-imagine /bin/bash
+# e.g., docker run -it -p 8888:8888 -v ~/wksp/github/my-project:/home/ubuntu/wksp/my-project pd-imagine:latest /bin/bash
 ```
 Then start the JupyterLab server by executing the following command inside the container:
 ``` cmd @container
