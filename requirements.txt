@@ -1,7 +1,0 @@
-ipykernel
-jupyterlab
-numpy
-pandas
-opencv-python-headless
-matplotlib
-ipywidgets

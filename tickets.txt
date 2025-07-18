@@ -295,25 +295,26 @@ The property `workspaceMount` actually specifies a docker `--mount` option, and 
 @brief:
 Allow timezone setting when building the container.
 
-@status: TODO
+@status: DONE
 
 @date:
 - created on 2025-05-06
-- updated on 2025-05-06
+- updated on 2025-07-18
 
 @details:
-Currently, the container is built with the default timezone (UTC+0), if the user is using a different timezone, there will be a discrepancy---especially confusing when mounting the local folder to the container.
+The Dockerfile installs the `tzdata` package, and the timezone can be set by setting the `TZ` build argument when building the container.
 
 === Ticket 6
 
 @brief:
-Allow non-root user name to be configurable when building the container.
+~~Allow non-root user name to be configurable when building the container.~~
 
-@status: TODO
+@status: DONE
 
 @date:
 - created on 2025-05-06
-- updated on 2025-05-06
+- updated on 2025-07-18
 
 @details:
-Currently, the container is built with the default non-root user name `panda`, anyone do not like it would prefer to pick a name of their own.
+The container is based on Ubuntu, which uses `ubuntu` as the default non-root user name.
+This keeps things simple---focus on the task, no need for coming up with a custom name.

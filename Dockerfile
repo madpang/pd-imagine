@@ -1,54 +1,68 @@
-# === Use an official (Debian-based) Python runtime as a base image 
-# @see: https://hub.docker.com/_/python
-FROM python:3.13-slim-bookworm
+# === Use an official Ubuntu 24.04 (noble numbat) as a base image 
+# @see: https://hub.docker.com/_/ubuntu
+# @note: Ubuntu image has a default non-root user named `ubuntu`, with user id 1000, group id 1000 and this dockerfile is designed to use that one.
+FROM ubuntu:24.04
 
-# Define a environment variable as an identifier
-ENV MY_ENV="pd-imagine"
+# === Arguments ===
+# Use the default non-root user on Ubuntu
+ARG PD_USER_NAME='ubuntu'
+ARG PD_USER_UID='1000'
+ARG PD_USER_GID=$PD_USER_UID
+# Specify the timezone
+ARG PD_TIMEZONE='Asia/Tokyo'
+# Set the locale
+ARG PD_LOCALE='C.UTF-8'
+# Set the workspace directory
+ARG PD_WORKSPACE='wksp'
+# Define an identifier
+ARG PD_CONTAINER_NAME='pd-imagine'
 
-# Copy the requirements file for Python packages
-# @note: Copied files are owned by root
-COPY requirements.txt /tmp/pip-tmp/requirements.txt
+# === Basic scaffolding ===
+# Options for the shell:
+# -e: Exit immediately if a command exits with a non-zero status (fail fast on errors).
+# -u: Treat unset variables as an error and exit immediately (helps catch typos or missing env vars).
+# -c: Read commands from the following string (this is required for Docker to pass the command as a string).
+SHELL ["/bin/sh", "-euc"]
 
-# === Install necessary packages
-# Install basic tools
-RUN apt-get update && apt-get install -y \
-	sudo \
-	openssh-client gnupg curl git \
-	px nano \
-	&& apt-get clean \
-	&& rm -rf /var/lib/apt/lists/*
+# Install basic packages
+# @note: The here doc (<<-EOT) strips leading tabs from the content, allowing for cleaner indentation in the Dockerfile.
+RUN <<-EOT
+	export DEBIAN_FRONTEND=noninteractive
+	apt-get update
+	apt-get install -y --no-install-recommends \
+		sudo \
+		openssh-client gnupg \
+		tzdata
+	apt-get clean
+	rm -rf /var/lib/apt/lists/*
+EOT
 
-# Install Python packages
-RUN pip install --no-cache-dir -r /tmp/pip-tmp/requirements.txt \
-	&& rm -rf /tmp/pip-tmp
+# Grant sudo access to the default user
+RUN <<-EOT
+	echo "${PD_USER_NAME} ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/$PD_USER_NAME
+	chmod 0440 /etc/sudoers.d/$PD_USER_NAME
+EOT
 
-# === Setup a non-root user and grant sudo access for development inside VS Code devcontainer
-# @note:
-# - Ubuntu image may have automatically created a default non-root user---named `ubuntu`, with user id 1000, group id 1000
-# - If you use Debian based image, you need to create that non-root user manually
-ARG USERNAME=panda
-ARG USER_UID=1000
-ARG USER_GID=$USER_UID
+# Create the necessary directory structure for gpg forwarding
+# @note: This directory is automatically created on Ubuntu Desktop, but it does not exist by default for a Ubuntu docker image.
+RUN <<-EOT
+	mkdir -p -m 0700 /run/user/$PD_USER_UID
+	chown $PD_USER_UID:$PD_USER_GID /run/user/$PD_USER_UID
+EOT
 
-RUN groupadd --gid $USER_GID $USERNAME \
-	&& useradd --uid $USER_UID --gid $USER_GID -m $USERNAME \
-	&& echo "$USERNAME ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/$USERNAME \
-	&& chmod 0440 /etc/sudoers.d/$USERNAME
+# === Working environment setup ===
+ENV TZ=$PD_TIMEZONE
+ENV LANG=$PD_LOCALE
+ENV CONTAINER=$PD_CONTAINER_NAME
 
+# === Launchpad ===
 # Execute the following commands as the non-root user
-USER $USERNAME
-
-# Create the necessary directory structure for gpg socket
-RUN sudo mkdir -m 0755 /run/user \
-	&& sudo mkdir -m 0700 /run/user/$USER_UID \
-	&& sudo chown $USER_UID:$USER_GID /run/user/$USER_UID
-
-# Fix the permissions of the home directory
-RUN chmod 750 /home/$USERNAME
-
-# === Setup the launch behavior
-# Set the default command (to keep the container alive)
-CMD ["sleep", "infinity"]
+USER $PD_USER_NAME
 
 # Set the working directory in the *container*
-WORKDIR /home/$USERNAME/workspace
+WORKDIR /home/$PD_USER_NAME/$PD_WORKSPACE
+
+# Set the default command
+CMD echo "PLEASE LOGIN TO THE CONTAINER AND RUN THE SERVICE MANUALLY" && \
+	echo "@host: docker run -it <image-name> bash" && \
+	echo "@docker: <your-command-here>"

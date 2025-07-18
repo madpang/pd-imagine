@@ -4,20 +4,15 @@
 		"dockerfile": "Dockerfile"
 	},
 	"runArgs": [
-		"--mount", "type=bind,src=${localEnv:HOME}/.gnupg,dst=/home/panda/.gnupg,readonly",
+		"--mount", "type=bind,src=${localEnv:HOME}/.gnupg,dst=/home/ubuntu/.gnupg,readonly",
 		"--mount", "type=bind,src=/run/user/1000/gnupg,dst=/run/user/1000/gnupg,readonly"
 	],	
-	"workspaceMount": "type=bind,src=${localWorkspaceFolder},target=/home/panda/workspace/${localWorkspaceFolderBasename}",
-	"workspaceFolder": "/home/panda/workspace/${localWorkspaceFolderBasename}",
+	"workspaceMount": "type=bind,src=${localWorkspaceFolder},target=/home/ubuntu/wksp/${localWorkspaceFolderBasename}",
+	"workspaceFolder": "/home/ubuntu/wksp/${localWorkspaceFolderBasename}",
 	"customizations": {
 		"vscode": {
 			"settings": {},
-			"extensions": [
-				"ms-python.python",
-				"eamodio.gitlens",
-				"ms-toolsai.jupyter",
-				"ms-toolsai.datawrangler"
-			]
+			"extensions": []
 		}
 	}
 }
