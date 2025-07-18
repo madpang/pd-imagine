@@ -32,7 +32,8 @@ RUN <<-EOT
 	apt-get install -y --no-install-recommends \
 		sudo \
 		openssh-client gnupg \
-		tzdata
+		tzdata \
+		git
 	apt-get clean
 	rm -rf /var/lib/apt/lists/*
 EOT
