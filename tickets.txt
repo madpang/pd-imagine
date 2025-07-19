@@ -25,22 +25,22 @@ Although one can also use a symlink to the `.devcontainer` folder in the current
 This may be a disappointment since VS Code allow direct "hot" update the configuration of a "devcontainer".
 
 The revised folder structure is as follows:
-+++ tree
+``` tree
 .
 |- Dockerfile
 |- requirements.txt
 |- devcontainer.json
 |- README.txt        # <- this file, non-essential for functioning
 |- tickets.txt       # <- task tracking, non-essential for functioning
-+++
+```
 
 To use this repository as a submodule, the user can execute the following command:
-+++ cmd
+``` cmd
 cd <path-to-your-project-folder>
 git clone --branch main --single-branch https://github.com/madpang/pd-imagine.git .devcontainer
 # or if the project folder is already a git repository, use the following command
 # git submodule add --branch main https://github.com/madpang/pd-imagine.git .devcontainer
-+++
+```
 
 === Ticket 2
 
@@ -84,22 +84,22 @@ With this idea in mind, the picture became clear to me:
 4. Setup a proper pinentry program on the local machine, so that I have a *unified* way to input the passphrase. This naturally leads to a GUI based program---I use `pinentry-mac` since my local machine is a Mac---the CLI based pinentry would easily get lost in this complex situation.
 
 Step 2 is straightforward---OpenSSH provides a simple setup, the following is an excerpt from the `~/.ssh/config` file on the local machine:
-+++ config
+``` config
 Host remote-server
 	HostName <remote-server-ip>
 	User <username>
 	ForwardAgent yes
 	IdentityFile <path-to-your-login-key>
-+++
+```
 On the local host, use `ssh-add <path-to-your-private-key>` to add the private SSH key that you want to share to the agent, and in the SSH session on the remote server, you should be able access that private SSH key by running `ssh-add -L`.
 
 Step 3 needs more work.
 For the first part---setup the gpg-agent forwarding via SSH---I consulted [4, 5], and the following line is added to that `~/.ssh/config` file on the local machine:
-+++
+```
 Host remote-server
 	# ...
 	RemoteForward /run/user/1000/gnupg/S.gpg-agent /Users/madpang/.gnupg/S.gpg-agent.extra
-+++
+```
 NOTE that, the `/run/user/1000/gnupg/S.gpg-agent` is the default socket file of the gpg-agent on the remote server---in my case, a Ubuntu server (22.04 LTS), and the `/Users/madpang/.gnupg/S.gpg-agent` is the default socket file of the gpg-agent on the local machine---a Mac (macOS 13.7).
 The references specifically stated that `S.gpg-agent.extra` on the local machine should be forwarded to `S.gpg-agent` on the remote server.
 The second part---setup the gpg-agent forwarding to the container running on the remote server---is a bit more tricky.
@@ -117,7 +117,7 @@ Inside a Docker container, you often run processes as specific users without the
 ```
 Therefore, you needs to create it manually in the `Dockerfile`.
 Reference [6] has a detailed explanation on how to do this:
-+++ quote
+``` quote
 ** Socket directory
 
   GnuPG uses Unix domain sockets to connect its components (on Windows
@@ -139,13 +139,13 @@ Reference [6] has a detailed explanation on how to do this:
                 chmod 700 /run/user/$uid
               fi
             done )
-+++
+```
 
 After this setup, I confirmed inside the container::
 ``` console @docker
 > gpgconf --list-dirs agent-socket
 /run/user/1000/gnupg/S.gpg-agent
-+++
+```
 
 This solution is implemented in the Dockerfile of this repository.
 If you start the container in a plain way---w/o using the VS Code Dev Containers extension---you can use the following command (from the remote server):
@@ -294,12 +294,12 @@ Currently, the default working directory is `/workspaces/<project-folder>`, wher
 Since this image is designed such that user will login as non-root user `panda`, the proposed working directory is more appropriate.
 
 To change the default working directory mount behavior, one can add the following line to the `devcontainer.json` file:
-+++ devcontainer.json
+``` devcontainer.json
 // ...
 "workspaceMount": "type=bind,src=${localWorkspaceFolder},target=/home/panda/workspace/${localWorkspaceFolderBasename}",
 "workspaceFolder": "/home/panda/workspace/${localWorkspaceFolderBasename}",
 // ...
-+++
+```
 The auto-variables are documented in [1].
 The property `workspaceMount` actually specifies a docker `--mount` option, and `workspaceFolder` is equivalent to the `WORKDIR` instruction in a Dockerfile.
 

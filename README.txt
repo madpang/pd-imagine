@@ -1,6 +1,6 @@
 ``` header
 @file: pd-imagine/README.txt
-@date: [created: 2025-02-05, updated: 2025-03-19]
+@date: [created: 2025-02-05, updated: 2025-07-19]
 @author: [madpang, t-tang-rfc]
 ```
 # pd-imagine
@@ -8,7 +8,7 @@
 ## Introduction
 
 This is a Docker image providing an isolated dev. env., but at the same time supporting SSH/GPG agent forwarding.
-It makes in situ. code committing and authoring easier.
+It makes *in situ.* code committing and authoring easier.
 
 It can either be launched via standard Docker commands or through the Visual Studio Code Dev Containers extension, while the latter one is the recommended way to use this image.
 
@@ -20,6 +20,8 @@ When used as a VS Code dev container, you get the following extra features:
 Those bonus features are applicable even when connecting to a remote server using *Remote SSH extension*.
 
 NOTE, you will *login* to the container as a non-root user `ubuntu`.
+
+ANOTHER NOTE, git credential sharing is handled by `credential.helper` supplied by VS Code Dev Containers extension, but `includeif.gitdir` or `include.path` will NOT work UNLESS the external config file is placed inside the repository mounted to the container.
 
 ## Usage
 
@@ -55,6 +57,11 @@ Then start the JupyterLab server by executing the following command inside the c
 jupyter lab --ip=0.0.0.0 --port=8888 --no-browser --NotebookApp.token=''
 ```
 After the server is started, you can access the JupyterLab server by opening a web browser from your client machine and navigating to `http://host-server-address:8888`.
+
+## Additional Notes
+
+The SSH/GPG agent forwarding enabled docker env. can be used in many other tasks besides Python development.
+If you want to use it for other purposes, you can checkout tag `barebone` and add your own features.
 
 ## Guideline for contribution
 
