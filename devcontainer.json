@@ -11,8 +11,18 @@
 	"workspaceFolder": "/home/ubuntu/wksp/${localWorkspaceFolderBasename}",
 	"customizations": {
 		"vscode": {
-			"settings": {},
-			"extensions": []
+			"settings": {
+				"python.defaultInterpreterPath": "/opt/venv/bin/python",
+				"python.terminal.activateEnvironment": true,
+				"python.venvPath": "/opt/venv",
+				"jupyter.interactiveWindow.cellMarker.default": "# ==="
+			},
+			"extensions": [
+				"ms-python.python",
+				"ms-toolsai.jupyter",
+				"eamodio.gitlens",
+				"streetsidesoftware.code-spell-checker"
+			]
 		}
 	}
 }

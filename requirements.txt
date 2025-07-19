@@ -1,0 +1,8 @@
+# Jupyter packages
+# @see: https://pypi.org/project/jupyter/
+jupyter
+# Core packages for image processing
+numpy
+opencv-python-headless
+# Data visualization
+matplotlib
