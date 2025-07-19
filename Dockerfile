@@ -24,7 +24,7 @@ ARG PD_CONTAINER_NAME='pd-imagine'
 # -c: Read commands from the following string (this is required for Docker to pass the command as a string).
 SHELL ["/bin/sh", "-euc"]
 
-# Install basic packages
+# Install packages for Python development
 # @note: The here doc (<<-EOT) strips leading tabs from the content, allowing for cleaner indentation in the Dockerfile.
 RUN <<-EOT
 	export DEBIAN_FRONTEND=noninteractive
@@ -33,9 +33,19 @@ RUN <<-EOT
 		sudo \
 		openssh-client gnupg \
 		tzdata \
-		git
+		git \
+		python3 python3-pip python3-venv python3-dev
 	apt-get clean
 	rm -rf /var/lib/apt/lists/*
+EOT
+
+# Create Python virtual environment and install packages
+COPY requirements.txt /tmp/requirements.txt
+RUN <<-EOT
+	python3 -m venv /opt/venv
+	/opt/venv/bin/pip install --no-cache-dir --upgrade pip
+	/opt/venv/bin/pip install --no-cache-dir -r /tmp/requirements.txt
+	rm /tmp/requirements.txt
 EOT
 
 # Grant sudo access to the default user
@@ -55,6 +65,9 @@ EOT
 ENV TZ=$PD_TIMEZONE
 ENV LANG=$PD_LOCALE
 ENV CONTAINER=$PD_CONTAINER_NAME
+# Make sure the virtual python environment is activated
+ENV PATH="/opt/venv/bin:$PATH"
+ENV VIRTUAL_ENV="/opt/venv"
 
 # === Launchpad ===
 # Execute the following commands as the non-root user
