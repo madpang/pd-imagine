@@ -118,10 +118,10 @@ USER $PD_USER_NAME
 ENV USER=$PD_USER_NAME
 ENV HOME=$PD_USER_HOME
 ENV SHELL='/bin/bash'
-ENV DISPLAY=':1'
+ENV DISPLAY=':2'
 
 # Expose the noVNC port
-EXPOSE "6901/tcp"
+EXPOSE "6902/tcp"
 
 # Set the working directory in the *container*
 WORKDIR $PD_WORKSPACE

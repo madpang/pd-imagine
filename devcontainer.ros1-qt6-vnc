@@ -5,7 +5,7 @@
 		"--mount", "type=bind,src=${localEnv:HOME}/.gnupg,dst=/home/ubuntu/.gnupg,readonly",
 		"--mount", "type=bind,src=/run/user/1000/gnupg,dst=/run/user/1000/gnupg,readonly",
 		"--mount", "type=bind,src=${localEnv:HOME}/wksp/git-config,dst=/home/ubuntu/wksp/git-config,readonly",
-		"--publish", "6901:6901/tcp",
+		"--publish", "6902:6902/tcp",
 		"--shm-size=2g",
 		"--device=/dev/input/js0"
 	],
